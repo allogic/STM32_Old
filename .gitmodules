@@ -1,0 +1,6 @@
+[submodule "vendor/printf"]
+	path = vendor/printf
+	url = https://github.com/mpaland/printf
+[submodule "vendor/libopencm3"]
+	path = vendor/libopencm3
+	url = https://github.com/libopencm3/libopencm3
