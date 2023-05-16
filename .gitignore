@@ -1,5 +1,6 @@
 # Prerequisites
 *.d
+*.ld
 
 # Object files
 *.o
@@ -43,6 +44,7 @@
 *.pdb
 
 # Kernel Module Compile Results
+*.bin
 *.mod*
 *.cmd
 .tmp_versions/
