@@ -13,13 +13,13 @@ void terminal_init(void)
 	rcc_periph_clock_enable(RCC_GPIOA);
 	rcc_periph_clock_enable(RCC_USART1);
 
-	gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO9);
-	gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO10);
+	gpio_mode_setup(TERMINAL_PORT_TX, GPIO_MODE_AF, GPIO_PUPD_NONE, TERMINAL_PIN_TX);
+	gpio_mode_setup(TERMINAL_PORT_RX, GPIO_MODE_AF, GPIO_PUPD_NONE, TERMINAL_PIN_RX);
 
-	gpio_set_output_options(GPIOA, GPIO_OTYPE_OD, GPIO_OSPEED_25MHZ, GPIO10);
+	gpio_set_output_options(TERMINAL_PORT_RX, GPIO_OTYPE_OD, GPIO_OSPEED_25MHZ, TERMINAL_PIN_RX);
 
-	gpio_set_af(GPIOA, GPIO_AF7, GPIO9);
-	gpio_set_af(GPIOA, GPIO_AF7, GPIO10);
+	gpio_set_af(TERMINAL_PORT_TX, TERMINAL_AF_TX, TERMINAL_PIN_TX);
+	gpio_set_af(TERMINAL_PORT_RX, TERMINAL_AF_RX, TERMINAL_PIN_RX);
 
 	usart_set_baudrate(USART1, 115200);
 	usart_set_databits(USART1, 8);

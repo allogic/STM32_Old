@@ -1,6 +1,7 @@
 #include <libopencm3/stm32/rcc.h>
 
 #include "terminal.h"
+#include "jtag.h"
 
 int main(void)
 {

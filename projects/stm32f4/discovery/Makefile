@@ -12,6 +12,7 @@ INCLUDES += -I$(VENDOR_DIR)
 
 CFILES += $(SOURCE_DIR)/main.c
 CFILES += $(SOURCE_DIR)/terminal.c
+CFILES += $(SOURCE_DIR)/jtag.c
 
 CFILES += $(VENDOR_DIR)/printf/printf.c
 
