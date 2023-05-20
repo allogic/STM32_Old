@@ -3,7 +3,10 @@
 
 #include "jtag.h"
 
-void jtag_init(void)
+static void gpio_init(void);
+static void timer_init(void);
+
+static void gpio_init(void)
 {
 	rcc_periph_clock_enable(RCC_GPIOA);
 
@@ -37,6 +40,17 @@ void jtag_init(void)
 #if defined(JTAG_PORT_TRST) && defined(JTAG_PIN_TRST)
 	gpio_clear(JTAG_PORT_TRST, JTAG_PIN_TRST);
 #endif
+}
+
+static void timer_init(void)
+{
+
+}
+
+void jtag_init(void)
+{
+	gpio_init();
+	timer_init();
 }
 
 void jtag_set_tdi(uint8_t value)

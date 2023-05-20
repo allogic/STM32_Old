@@ -16,10 +16,10 @@
 #define JTAG_PIN_TMS GPIO3
 
 //#define JTAG_PORT_SRST GPIOA
-//#define JTAG_PORT_SRST GPIO4
+//#define JTAG_PIN_SRST GPIO4
 
 //#define JTAG_PORT_TRST GPIOA
-//#define JTAG_PORT_TRST GPIO5
+//#define JTAG_PIN_TRST GPIO5
 
 void jtag_init(void);
 void jtag_set_tdi(uint8_t value);

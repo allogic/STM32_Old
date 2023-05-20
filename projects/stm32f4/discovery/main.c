@@ -11,7 +11,13 @@ int main(void)
 
 	while (1)
 	{
-		printf("%d\r\n", 42);
+		if (terminal_arg("program"))
+		{
+			if (terminal_arg("flash"))
+			{
+				printf("Programming flash\r\n");
+			}
+		}
 	}
 
 	return 0;
