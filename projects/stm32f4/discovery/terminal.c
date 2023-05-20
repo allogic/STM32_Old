@@ -75,5 +75,5 @@ void usart1_isr(void)
 
 void _putchar(char value)
 {
-    usart_send(USART1, value);
+	usart_send(USART1, value);
 }
