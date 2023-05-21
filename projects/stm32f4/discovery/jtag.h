@@ -2,6 +2,7 @@
 #define JTAG_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define JTAG_PORT_TDI GPIOA
 #define JTAG_PIN_TDI GPIO0
@@ -32,7 +33,8 @@ void jtag_set_srst(uint8_t value);
 #if defined(JTAG_PORT_TRST) && defined(JTAG_PIN_TRST)
 void jtag_set_trst(uint8_t value);
 #endif
+void jtag_set_frequency(uint16_t value);
 void jtag_transfer(uint16_t length, uint8_t* input, uint8_t* output);
-void jtag_strobe(uint8_t pulses, bool tms, bool tdi);
+bool jtag_strobe(uint8_t pulses, bool tms, bool tdi);
 
 #endif
