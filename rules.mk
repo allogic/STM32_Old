@@ -39,18 +39,22 @@ CSTD ?= -std=c99
 # If you're insane, V=99 will print out all sorts of things.
 V?=0
 ifeq ($(V),0)
-Q	:= @
-NULL	:= 2>/dev/null
+Q := @
+NULL := 2>/dev/null
 endif
 
-# Tool paths.
-PREFIX	?= arm-none-eabi-
-CC	= $(PREFIX)gcc
-CXX	= $(PREFIX)g++
-LD	= $(PREFIX)gcc
-OBJCOPY	= $(PREFIX)objcopy
-OBJDUMP	= $(PREFIX)objdump
-OOCD	?= openocd
+GDB_DIR ?= /etc/gdb-11.2_arm-none-eabi
+GDBDATA_DIR ?= $(GDB_DIR)/data-directory
+
+PREFIX ?= arm-none-eabi-
+CC = $(PREFIX)gcc
+CXX = $(PREFIX)g++
+LD = $(PREFIX)gcc
+OBJCOPY = $(PREFIX)objcopy
+OBJDUMP = $(PREFIX)objdump
+OOCD ?= openocd
+GDB ?= $(GDB_DIR)/gdb
+GDBFRONTEND ?= gdbfrontend
 
 OPENCM3_INC = $(OPENCM3_DIR)/include
 
@@ -112,6 +116,7 @@ LDLIBS += -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group
 
 all: $(PROJECT).elf $(PROJECT).bin
 flash: $(PROJECT).flash
+debug: $(PROJECT).debug
 
 # error if not using linker script generator
 ifeq (,$(DEVICE))
@@ -126,26 +131,26 @@ endif
 
 # Need a special rule to have a bin dir
 $(BUILD_DIR)/%.o: %.c
-	@printf "  CC\t$<\n"
+	@printf "  CC  $<\n"
 	@mkdir -p $(dir $@)
 	$(Q)$(CC) $(TGT_CFLAGS) $(CFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $@ -c $<
 
 $(BUILD_DIR)/%.o: %.cxx
-	@printf "  CXX\t$<\n"
+	@printf "  CXX  $<\n"
 	@mkdir -p $(dir $@)
 	$(Q)$(CXX) $(TGT_CXXFLAGS) $(CXXFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $@ -c $<
 
 $(BUILD_DIR)/%.o: %.S
-	@printf "  AS\t$<\n"
+	@printf "  AS  $<\n"
 	@mkdir -p $(dir $@)
 	$(Q)$(CC) $(TGT_ASFLAGS) $(ASFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $@ -c $<
 
 $(PROJECT).elf: $(OBJS) $(LDSCRIPT) $(LIBDEPS)
-	@printf "  LD\t$@\n"
+	@printf "  LD  $@\n"
 	$(Q)$(LD) $(TGT_LDFLAGS) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $@
 
 %.bin: %.elf
-	@printf "  OBJCOPY\t$@\n"
+	@printf "  OBJCOPY  $@\n"
 	$(Q)$(OBJCOPY) -O binary  $< $@
 
 %.lss: %.elf
@@ -155,22 +160,28 @@ $(PROJECT).elf: $(OBJS) $(LDSCRIPT) $(LIBDEPS)
 	$(OBJDUMP) -S $< > $@
 
 %.flash: %.elf
-	@printf "  FLASH\t$<\n"
+	@printf "  FLASH  $<\n"
 ifeq (,$(OOCD_FILE))
-	$(Q)(echo "halt; program $(realpath $(*).elf) verify reset" | nc -4 localhost 4444 2>/dev/null) || \
-		$(OOCD) -f interface/$(OOCD_INTERFACE).cfg \
-		-f target/$(OOCD_TARGET).cfg \
-		-c "program $(realpath $(*).elf) verify reset exit" \
-		$(NULL)
+	$(Q)$(OOCD) -f interface/$(OOCD_INTERFACE).cfg -f target/$(OOCD_TARGET).cfg	-c "program $(realpath $(*).elf) verify reset exit" $(NULL)
 else
-	$(Q)(echo "halt; program $(realpath $(*).elf) verify reset" | nc -4 localhost 4444 2>/dev/null) || \
-		$(OOCD) -f $(OOCD_FILE) \
-		-c "program $(realpath $(*).elf) verify reset exit" \
-		$(NULL)
+	$(Q)$(OOCD) -f $(OOCD_FILE) -c "program $(realpath $(*).elf) verify reset exit" $(NULL)
 endif
 
-clean:
-	rm -rf $(BUILD_DIR) $(GENERATED_BINS)
+server:
+	@printf "  SERVER  localhost:3333$<\n"
+ifeq (,$(OOCD_FILE))
+	$(Q)$(OOCD) -f interface/$(OOCD_INTERFACE).cfg -f target/$(OOCD_TARGET).cfg $(NULL)
+else
+	$(Q)$(OOCD) -f $(OOCD_FILE) $(NULL)
+endif
 
-.PHONY: all clean flash
+%.debug: %.elf
+	@printf "  DEBUG  $(PROJECT)$<\n"
+	$(Q)$(GDBFRONTEND) -g $(GDB) -D -G "--data-directory=$(GDBDATA_DIR) -ex=\"file $(realpath $(*).elf)\" -ex=\"target remote localhost:3333\"" $(NULL)
+
+clean:
+	@printf "  CLEANUP  $(PROJECT)\n"
+	$(Q)rm -rf $(BUILD_DIR) $(GENERATED_BINS) $(NULL)
+
+.PHONY: all clean flash debug
 -include $(OBJS:.o=.d)

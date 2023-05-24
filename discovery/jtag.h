@@ -4,16 +4,16 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define JTAG_PORT_TDI GPIOA
+#define JTAG_PORT_TDI GPIOB
 #define JTAG_PIN_TDI GPIO0
 
-#define JTAG_PORT_TDO GPIOA
+#define JTAG_PORT_TDO GPIOB
 #define JTAG_PIN_TDO GPIO1
 
-#define JTAG_PORT_TCK GPIOA
+#define JTAG_PORT_TCK GPIOB
 #define JTAG_PIN_TCK GPIO2
 
-#define JTAG_PORT_TMS GPIOA
+#define JTAG_PORT_TMS GPIOB
 #define JTAG_PIN_TMS GPIO3
 
 //#define JTAG_PORT_SRST GPIOA

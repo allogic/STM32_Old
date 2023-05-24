@@ -6,13 +6,18 @@
 
 #include "jtag.h"
 
+static void periph_init(void);
 static void gpio_init(void);
 static void timer_init(void);
 
-static void gpio_init(void)
+static void periph_init(void)
 {
 	rcc_periph_clock_enable(RCC_GPIOA);
+	rcc_periph_clock_enable(RCC_TIM2);
+}
 
+static void gpio_init(void)
+{
 	gpio_mode_setup(JTAG_PORT_TDI, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, JTAG_PIN_TDI);
 	gpio_mode_setup(JTAG_PORT_TDO, GPIO_MODE_INPUT, GPIO_PUPD_PULLDOWN, JTAG_PIN_TDO);
 	gpio_mode_setup(JTAG_PORT_TCK, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, JTAG_PIN_TCK);
@@ -47,8 +52,6 @@ static void gpio_init(void)
 
 static void timer_init(void)
 {
-	rcc_periph_clock_enable(RCC_TIM2);
-
 	timer_set_mode(TIM2, TIM_CR1_CKD_CK_INT, TIM_CR1_CMS_EDGE, TIM_CR1_DIR_UP);
 
 	timer_disable_counter(TIM2);
@@ -71,6 +74,7 @@ static void timer_init(void)
 
 void jtag_init(void)
 {
+	periph_init();
 	gpio_init();
 	timer_init();
 }
