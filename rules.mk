@@ -162,7 +162,7 @@ $(PROJECT).elf: $(OBJS) $(LDSCRIPT) $(LIBDEPS)
 %.flash: %.elf
 	@printf "  FLASH  $<\n"
 ifeq (,$(OOCD_FILE))
-	$(Q)$(OOCD) -f interface/$(OOCD_INTERFACE).cfg -f target/$(OOCD_TARGET).cfg	-c "program $(realpath $(*).elf) verify reset exit" $(NULL)
+	$(Q)$(OOCD) -f interface/$(OOCD_INTERFACE).cfg -f target/$(OOCD_TARGET).cfg -c "program $(realpath $(*).elf) verify reset exit" $(NULL)
 else
 	$(Q)$(OOCD) -f $(OOCD_FILE) -c "program $(realpath $(*).elf) verify reset exit" $(NULL)
 endif
