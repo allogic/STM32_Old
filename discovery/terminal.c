@@ -1,4 +1,6 @@
 #include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
 
 #include <libopencm3/cm3/nvic.h>
 
@@ -6,17 +8,20 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/usart.h>
 
-#include "queue.h"
-
 #include "terminal.h"
 
 static void periph_init(void);
 static void gpio_init(void);
 static void usart_init(void);
 
-static char s_char_queue_buffer[TERMINAL_CHAR_QUEUE_SIZE];
+static void terminal_handle_ansi(uint8_t byte);
 
-static queue_t s_char_queue;
+static uint8_t s_buffer[TERMINAL_BUFFER_SIZE];
+
+static uint32_t s_cursor_position;
+
+static bool s_esc;
+static bool s_csi;
 
 static void periph_init(void)
 {
@@ -55,27 +60,99 @@ void terminal_init(void)
 {
 	periph_init();
 	gpio_init();
-	queue_init(&s_char_queue, s_char_queue_buffer, TERMINAL_CHAR_QUEUE_SIZE, sizeof(char));
 	usart_init();
 }
 
-void terminal_process(void)
+static void terminal_handle_ansi(uint8_t byte)
 {
-	uint32_t
-
-	uint32_t index = queue_begin(&s_char_queue);
-	uint32_t end = queue_end(&s_char_queue);
-
-	while (index != end)
+	if (s_esc)
 	{
-		char value = *(char*)queue_peek(&s_char_queue, index);
-
-		if (value == '\r' || value == '\n')
+		if (s_csi)
 		{
-			
+			if (byte == 126)
+			{
+				s_csi = false;
+				s_esc = false;
+			}
 		}
+		else
+		{
+			if (byte == 65) // Move up
+			{
+				s_esc = false;
+			}
+			else if (byte == 66) // Move down
+			{
+				s_esc = false;
+			}
+			else if (byte == 67) // Move back
+			{
+				//if (s_cursor_position < TERMINAL_BUFFER_SIZE)
+				//{
+				//	s_cursor_position++;
+				//
+				//	printf(TERMINAL_CSI_CUF(1));
+				//}
 
-		index = queue_next(&s_char_queue, index);
+				s_esc = false;
+			}
+			else if (byte == 68) // Move forward
+			{
+				//if (s_cursor_position > 0)
+				//{
+				//	s_cursor_position--;
+				//
+				//	printf(TERMINAL_CSI_CUB(1));
+				//}
+
+				s_esc = false;
+			}
+			else if (byte == 91) // CSI mode
+			{
+				s_csi = true;
+			}
+			else
+			{
+				s_esc = false;
+			}
+		}
+	}
+	else
+	{
+		if (byte == 8 || byte == 127) // Backspace & Delete
+		{
+			if (s_cursor_position > 0)
+			{
+				s_cursor_position--;
+
+				s_buffer[s_cursor_position] = 0;
+
+				printf(TERMINAL_CSI_CUB(1) " " TERMINAL_CSI_CUB(1));
+			}
+		}
+		else if (byte == 13) // Return
+		{
+			s_cursor_position = 0;
+			
+			memset(s_buffer, 0, TERMINAL_BUFFER_SIZE);
+
+			printf("\r\n");
+		}
+		else if (byte == 27) // ESC mode
+		{
+			//s_esc = true;
+		}
+		else if (byte >= 32 && byte < 127)
+		{
+			if (s_cursor_position < TERMINAL_BUFFER_SIZE)
+			{
+				s_buffer[s_cursor_position] = byte;
+
+				s_cursor_position++;
+
+				printf("%c", byte);
+			}
+		}
 	}
 }
 
@@ -83,13 +160,13 @@ void usart2_isr(void)
 {
 	if (((USART_CR1(USART2) & USART_CR1_RXNEIE) != 0) && ((USART_SR(USART2) & USART_SR_RXNE) != 0))
 	{
-		char value = usart_recv(USART2);
+		uint8_t byte = usart_recv(USART2);
 
-		queue_push_isr(&s_char_queue, &value);
+		terminal_handle_ansi(byte);
 	}
 }
 
-void _putchar(char value)
+void _putchar(char byte)
 {
-	usart_send_blocking(USART2, value);
+	usart_send_blocking(USART2, byte);
 }

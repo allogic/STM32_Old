@@ -20,7 +20,7 @@ int main(void)
 
 	while (1)
 	{
-		terminal_process();
+
 	}
 
 	return 0;

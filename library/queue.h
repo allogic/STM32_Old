@@ -2,7 +2,6 @@
 #define QUEUE_H
 
 #include <stdint.h>
-#include <stdbool.h>
 
 typedef struct
 {
@@ -18,8 +17,8 @@ typedef struct
 
 void queue_init(queue_t* queue, void* buffer, uint32_t buffer_count, uint32_t value_size);
 
-bool queue_push(queue_t* queue, void* value);
-bool queue_push_isr(queue_t* queue, void* value);
+void queue_push(queue_t* queue, void* value);
+void queue_push_isr(queue_t* queue, void* value);
 void* queue_pop(queue_t* queue);
 void* queue_pop_isr(queue_t* queue);
 void queue_flush(queue_t* queue);
