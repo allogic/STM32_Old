@@ -14,11 +14,9 @@
 #define PRINTF_DISABLE_SUPPORT_LONG_LONG
 #define PRINTF_DISABLE_SUPPORT_PTRDIFF_T
 
-#include <stdbool.h>
-
 #include <printf/printf.h>
 
 void terminal_init(void);
-bool terminal_arg(const char* value);
+void terminal_process(void);
 
 #endif

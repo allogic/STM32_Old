@@ -2,12 +2,13 @@
 #define QUEUE_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct
 {
 	void* buffer;
-	uint32_t buffer_size;
 	uint32_t buffer_count;
+	uint32_t buffer_size;
 	uint32_t value_size;
 	uint32_t read_index;
 	uint32_t read_offset;
@@ -15,16 +16,20 @@ typedef struct
 	uint32_t write_offset;
 } queue_t;
 
-void queue_init(queue_t* queue, void* buffer, uint32_t buffer_size, uint32_t value_size);
+void queue_init(queue_t* queue, void* buffer, uint32_t buffer_count, uint32_t value_size);
 
-void queue_push(queue_t* queue, void* value);
-void queue_push_isr(queue_t* queue, void* value);
+bool queue_push(queue_t* queue, void* value);
+bool queue_push_isr(queue_t* queue, void* value);
 void* queue_pop(queue_t* queue);
 void* queue_pop_isr(queue_t* queue);
+void queue_flush(queue_t* queue);
+void queue_flush_isr(queue_t* queue);
+uint32_t queue_count(queue_t* queue);
+uint32_t queue_count_isr(queue_t* queue);
 
 uint32_t queue_begin(queue_t* queue);
 uint32_t queue_end(queue_t* queue);
-uint32_t queue_inc(queue_t* queue, uint32_t index);
+uint32_t queue_next(queue_t* queue, uint32_t index);
 void* queue_peek(queue_t* queue, uint32_t index);
 
 #endif

@@ -20,10 +20,7 @@ int main(void)
 
 	while (1)
 	{
-		if (terminal_arg("program"))
-		{
-			
-		}
+		terminal_process();
 	}
 
 	return 0;

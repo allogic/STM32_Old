@@ -4,11 +4,11 @@
 
 #include "queue.h"
 
-void queue_init(queue_t* queue, void* buffer, uint32_t buffer_size, uint32_t value_size)
+void queue_init(queue_t* queue, void* buffer, uint32_t buffer_count, uint32_t value_size)
 {
 	queue->buffer = buffer;
-	queue->buffer_size = buffer_size;
-	queue->buffer_count = buffer_size / value_size;
+	queue->buffer_count = buffer_count;
+	queue->buffer_size = buffer_count * value_size;
 	queue->value_size = value_size;
 	queue->read_index = 0;
 	queue->read_offset = 0;
@@ -16,36 +16,54 @@ void queue_init(queue_t* queue, void* buffer, uint32_t buffer_size, uint32_t val
 	queue->write_offset = 0;
 }
 
-void queue_push(queue_t* queue, void* value)
+bool queue_push(queue_t* queue, void* value)
 {
+	bool valid = false;
+
 	cm_disable_interrupts();
 
-	memcpy(((char*)queue->buffer) + queue->write_offset, value, queue->value_size);
-
-	queue->write_index += 1;
-	queue->write_offset += queue->value_size;
-
-	if ((queue->write_index >= queue->buffer_count) || (queue->write_offset >= queue->buffer_size))
+	if (queue->read_index != queue->write_index)
 	{
-		queue->write_index = 0;
-		queue->write_offset = 0;
+		valid = true;
+
+		memcpy(((char*)queue->buffer) + queue->write_offset, value, queue->value_size);
+
+		queue->write_index += 1;
+		queue->write_offset += queue->value_size;
+
+		if (queue->write_index >= queue->buffer_count)
+		{
+			queue->write_index = 0;
+			queue->write_offset = 0;
+		}
 	}
 
 	cm_enable_interrupts();
+
+	return valid;
 }
 
-void queue_push_isr(queue_t* queue, void* value)
+bool queue_push_isr(queue_t* queue, void* value)
 {
-	memcpy(((char*)queue->buffer) + queue->write_offset, value, queue->value_size);
+	bool valid = false;
 
-	queue->write_index += 1;
-	queue->write_offset += queue->value_size;
-
-	if ((queue->write_index >= queue->buffer_count) || (queue->write_offset >= queue->buffer_size))
+	if (queue->read_index != queue->write_index)
 	{
-		queue->write_index = 0;
-		queue->write_offset = 0;
+		valid = true;
+
+		memcpy(((char*)queue->buffer) + queue->write_offset, value, queue->value_size);
+
+		queue->write_index += 1;
+		queue->write_offset += queue->value_size;
+
+		if (queue->write_index >= queue->buffer_count)
+		{
+			queue->write_index = 0;
+			queue->write_offset = 0;
+		}
 	}
+
+	return valid;
 }
 
 void* queue_pop(queue_t* queue)
@@ -54,15 +72,18 @@ void* queue_pop(queue_t* queue)
 
 	cm_disable_interrupts();
 
-	value = ((char*)queue->buffer) + queue->read_offset;
-
-	queue->read_index += 1;
-	queue->read_offset += queue->value_size;
-
-	if ((queue->read_index >= queue->buffer_count) || (queue->read_offset >= queue->buffer_size))
+	if (queue->read_index != queue->write_index)
 	{
-		queue->read_index = 0;
-		queue->read_offset = 0;
+		value = ((char*)queue->buffer) + queue->read_offset;
+
+		queue->read_index += 1;
+		queue->read_offset += queue->value_size;
+
+		if ((queue->read_index >= queue->buffer_count) || (queue->read_offset >= queue->buffer_size))
+		{
+			queue->read_index = 0;
+			queue->read_offset = 0;
+		}
 	}
 
 	cm_enable_interrupts();
@@ -74,18 +95,65 @@ void* queue_pop_isr(queue_t* queue)
 {
 	void* value = 0;
 
-	value = ((char*)queue->buffer) + queue->read_offset;
-
-	queue->read_index += 1;
-	queue->read_offset += queue->value_size;
-
-	if ((queue->read_index >= queue->buffer_count) || (queue->read_offset >= queue->buffer_size))
+	if (queue->read_index != queue->write_index)
 	{
-		queue->read_index = 0;
-		queue->read_offset = 0;
+		value = ((char*)queue->buffer) + queue->read_offset;
+
+		queue->read_index += 1;
+		queue->read_offset += queue->value_size;
+
+		if ((queue->read_index >= queue->buffer_count) || (queue->read_offset >= queue->buffer_size))
+		{
+			queue->read_index = 0;
+			queue->read_offset = 0;
+		}
 	}
 
 	return value;
+}
+
+void queue_flush(queue_t* queue)
+{
+	cm_disable_interrupts();
+
+	queue->read_index = 0;
+	queue->read_offset = 0;
+
+	queue->write_index = 0;
+	queue->write_offset = 0;
+
+	cm_enable_interrupts();
+}
+
+void queue_flush_isr(queue_t* queue)
+{
+	queue->read_index = 0;
+	queue->read_offset = 0;
+
+	queue->write_index = 0;
+	queue->write_offset = 0;
+}
+
+uint32_t queue_count(queue_t* queue)
+{
+	uint32_t count = 0;
+
+	cm_disable_interrupts();
+
+	count = (queue->write_index + queue->buffer_count - queue->read_index) % queue->buffer_count;
+
+	cm_enable_interrupts();
+
+	return count;
+}
+
+uint32_t queue_count_isr(queue_t* queue)
+{
+	uint32_t count = 0;
+
+	count = (queue->write_index + queue->buffer_count - queue->read_index) % queue->buffer_count;
+
+	return count;
 }
 
 uint32_t queue_begin(queue_t* queue)
@@ -98,7 +166,7 @@ uint32_t queue_end(queue_t* queue)
 	return queue->write_index;
 }
 
-uint32_t queue_inc(queue_t* queue, uint32_t index)
+uint32_t queue_next(queue_t* queue, uint32_t index)
 {
 	return (index + 1) % queue->buffer_count;
 }

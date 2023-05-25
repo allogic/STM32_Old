@@ -59,28 +59,24 @@ void terminal_init(void)
 	usart_init();
 }
 
-bool terminal_arg(const char* value)
+void terminal_process(void)
 {
-	//usart_disable_rx_interrupt(USART2);
+	uint32_t
 
 	uint32_t index = queue_begin(&s_char_queue);
 	uint32_t end = queue_end(&s_char_queue);
 
-	printf("index:%u end:%u\r\n", index, end);
-
 	while (index != end)
 	{
-		printf("%u\r\n", index);
-		printf("%c", *(char*)queue_peek(&s_char_queue, index));
+		char value = *(char*)queue_peek(&s_char_queue, index);
 
-		index = queue_inc(&s_char_queue, index);
+		if (value == '\r' || value == '\n')
+		{
+			
+		}
+
+		index = queue_next(&s_char_queue, index);
 	}
-
-	printf("\r\n");
-
-	//usart_enable_rx_interrupt(USART2);
-
-	return false;
 }
 
 void usart2_isr(void)
