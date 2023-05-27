@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -8,15 +7,24 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/usart.h>
 
+#include <printf/printf.h>
+
 #include "terminal.h"
+#include "utility.h"
 
 static void periph_init(void);
 static void gpio_init(void);
 static void usart_init(void);
 
 static void terminal_handle_ansi(uint8_t byte);
+static void terminal_execute_buffer(void);
+static void terminal_build_arg_buffer(uint8_t* commands);
 
-static uint8_t s_buffer[TERMINAL_BUFFER_SIZE];
+extern command_t g_commands[];
+extern uint32_t g_commands_count;
+
+static uint8_t s_cmd_buffer[TERMINAL_CMD_BUFFER_SIZE];
+static uint32_t s_arg_buffer[TERMINAL_ARG_BUFFER_SIZE];
 
 static uint32_t s_cursor_position;
 
@@ -69,45 +77,49 @@ static void terminal_handle_ansi(uint8_t byte)
 	{
 		if (s_csi)
 		{
-			if (byte == 126)
-			{
-				s_csi = false;
-				s_esc = false;
-			}
-		}
-		else
-		{
 			if (byte == 65) // Move up
 			{
 				s_esc = false;
+				s_csi = false;
 			}
 			else if (byte == 66) // Move down
 			{
 				s_esc = false;
+				s_csi = false;
 			}
 			else if (byte == 67) // Move back
 			{
-				//if (s_cursor_position < TERMINAL_BUFFER_SIZE)
-				//{
-				//	s_cursor_position++;
-				//
-				//	printf(TERMINAL_CSI_CUF(1));
-				//}
+				if (s_cursor_position < (TERMINAL_CMD_BUFFER_SIZE - 1))
+				{
+					s_cursor_position++;
+				
+					printf(TERMINAL_CSI_CUF(1));
+				}
 
 				s_esc = false;
+				s_csi = false;
 			}
 			else if (byte == 68) // Move forward
 			{
-				//if (s_cursor_position > 0)
-				//{
-				//	s_cursor_position--;
-				//
-				//	printf(TERMINAL_CSI_CUB(1));
-				//}
+				if (s_cursor_position > 0)
+				{
+					s_cursor_position--;
+				
+					printf(TERMINAL_CSI_CUB(1));
+				}
 
 				s_esc = false;
+				s_csi = false;
 			}
-			else if (byte == 91) // CSI mode
+			else
+			{
+				s_esc = false;
+				s_csi = false;
+			}
+		}
+		else
+		{
+			if (byte == 91) // CSI mode
 			{
 				s_csi = true;
 			}
@@ -125,7 +137,7 @@ static void terminal_handle_ansi(uint8_t byte)
 			{
 				s_cursor_position--;
 
-				s_buffer[s_cursor_position] = 0;
+				s_cmd_buffer[s_cursor_position] = 0;
 
 				printf(TERMINAL_CSI_CUB(1) " " TERMINAL_CSI_CUB(1));
 			}
@@ -134,24 +146,63 @@ static void terminal_handle_ansi(uint8_t byte)
 		{
 			s_cursor_position = 0;
 			
-			memset(s_buffer, 0, TERMINAL_BUFFER_SIZE);
-
 			printf("\r\n");
+
+			terminal_execute_buffer();
 		}
 		else if (byte == 27) // ESC mode
 		{
-			//s_esc = true;
+			s_esc = true;
 		}
 		else if (byte >= 32 && byte < 127)
 		{
-			if (s_cursor_position < TERMINAL_BUFFER_SIZE)
+			if (s_cursor_position < (TERMINAL_CMD_BUFFER_SIZE - 1))
 			{
-				s_buffer[s_cursor_position] = byte;
+				s_cmd_buffer[s_cursor_position] = byte;
 
 				s_cursor_position++;
 
 				printf("%c", byte);
 			}
+		}
+	}
+}
+
+static void terminal_execute_buffer(void)
+{
+	for (uint32_t i = 0; i < g_commands_count; i++)
+	{
+		uint32_t cmd_size = strlen(g_commands[i].command);
+		if (memcmp(s_cmd_buffer, g_commands[i].command, cmd_size) == 0)
+		{
+			uint8_t* arguments = s_cmd_buffer + cmd_size;
+			uint32_t argument_count = string_count_value((char*)arguments, 32);
+
+			string_replace_value((char*)arguments, 32, 0);
+
+			arguments++;
+
+			terminal_build_arg_buffer(arguments);
+
+			g_commands[i].function(argument_count, (char**)s_arg_buffer);
+
+			break;
+		}
+	}
+
+	memset(s_cmd_buffer, 0, sizeof(s_cmd_buffer));
+	memset(s_arg_buffer, 0, sizeof(s_arg_buffer));
+}
+
+static void terminal_build_arg_buffer(uint8_t* commands)
+{
+	s_arg_buffer[0] = (uint32_t)&commands[0];
+
+	for (uint32_t i = 0, j = 1; i < TERMINAL_CMD_BUFFER_SIZE; i++)
+	{
+		if ((commands[i] == 0) && (i < (TERMINAL_CMD_BUFFER_SIZE - 2)) && (commands[i + 1] != 0))
+		{
+			s_arg_buffer[j++] = (uint32_t)&commands[i + 1];
 		}
 	}
 }

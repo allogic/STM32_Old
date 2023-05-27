@@ -1,14 +1,20 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/usart.h>
 
+#include <printf/printf.h>
+
 #include "terminal.h"
 #include "jtag.h"
 
-static void program_flash(void);
+static void flash(uint32_t argc, char** argv);
 
-static void program_flash(void)
+TERMINAL_CMD_TABLE_BEGIN
+TERMINAL_CMD_TABLE_ENTRY("flash", flash)
+TERMINAL_CMD_TABLE_END
+
+static void flash(uint32_t argc, char** argv)
 {
-	printf("Programming flash\r\n");
+	
 }
 
 int main(void)

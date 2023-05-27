@@ -159,7 +159,7 @@ void jtag_set_frequency(uint16_t value)
 	timer_enable_counter(TIM2);
 }
 
-void jtag_transfer(uint16_t length, uint8_t* input, uint8_t* output)
+void jtag_transfer(uint16_t size, uint8_t* input, uint8_t* output)
 {
 	uint16_t i = 0;
 
@@ -167,7 +167,7 @@ void jtag_transfer(uint16_t length, uint8_t* input, uint8_t* output)
 
 	TIM_SR(TIM2) = ~TIM_SR_UIF;
 
-	while (i < length)
+	while (i < size)
 	{
 		uint8_t mask = 0x80 >> (i % 8);
 

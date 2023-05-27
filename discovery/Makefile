@@ -19,6 +19,7 @@ CFILES += $(PROJECT_DIR)/terminal.c
 CFILES += $(PROJECT_DIR)/jtag.c
 
 CFILES += $(LIBRARY_DIR)/queue.c
+CFILES += $(LIBRARY_DIR)/utility.c
 
 CFILES += $(VENDOR_DIR)/printf/printf.c
 

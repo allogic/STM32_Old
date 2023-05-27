@@ -34,7 +34,7 @@ void jtag_set_srst(uint8_t value);
 void jtag_set_trst(uint8_t value);
 #endif
 void jtag_set_frequency(uint16_t value);
-void jtag_transfer(uint16_t length, uint8_t* input, uint8_t* output);
+void jtag_transfer(uint16_t size, uint8_t* input, uint8_t* output);
 bool jtag_strobe(uint8_t pulses, bool tms, bool tdi);
 
 #endif

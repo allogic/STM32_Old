@@ -1,6 +1,8 @@
 #ifndef TERMINAL_H
 #define TERMINAL_H
 
+#include <stdint.h>
+
 #define TERMINAL_PORT_TX GPIOA
 #define TERMINAL_PIN_TX GPIO2
 #define TERMINAL_AF_TX GPIO_AF7
@@ -24,12 +26,18 @@
 #define TERMINAL_CSI_PGDN TERMINAL_CSI "6~"
 #define TERMINAL_CSI_HOME TERMINAL_CSI "7~"
 
-#define TERMINAL_BUFFER_SIZE 32
+#define TERMINAL_CMD_TABLE_BEGIN command_t g_commands[] = {
+#define TERMINAL_CMD_TABLE_ENTRY(COMMAND, FUNCTION) { COMMAND, FUNCTION },
+#define TERMINAL_CMD_TABLE_END }; const uint32_t g_commands_count = sizeof(g_commands) / sizeof(g_commands[0]);
 
-#define PRINTF_DISABLE_SUPPORT_LONG_LONG
-#define PRINTF_DISABLE_SUPPORT_PTRDIFF_T
+#define TERMINAL_CMD_BUFFER_SIZE 32
+#define TERMINAL_ARG_BUFFER_SIZE 32
 
-#include <printf/printf.h>
+typedef struct
+{
+    char command[TERMINAL_CMD_BUFFER_SIZE];
+    void (*function)(uint32_t argc, char** argv);
+} command_t;
 
 void terminal_init(void);
 
