@@ -18,7 +18,6 @@ static void usart_init(void);
 
 static void terminal_handle_ansi(uint8_t byte);
 static void terminal_execute_buffer(void);
-static void terminal_build_arg_buffer(uint8_t* commands);
 
 extern command_t g_commands[];
 extern uint32_t g_commands_count;
@@ -172,19 +171,23 @@ static void terminal_execute_buffer(void)
 {
 	for (uint32_t i = 0; i < g_commands_count; i++)
 	{
-		uint32_t cmd_size = strlen(g_commands[i].command);
-		if (memcmp(s_cmd_buffer, g_commands[i].command, cmd_size) == 0)
+		if (memcmp(s_cmd_buffer, g_commands[i].command, strlen(g_commands[i].command)) == 0)
 		{
-			uint8_t* arguments = s_cmd_buffer + cmd_size;
-			uint32_t argument_count = string_count_value((char*)arguments, 32);
+			uint32_t argc = string_count_value((char*)s_cmd_buffer, 32);
 
-			string_replace_value((char*)arguments, 32, 0);
+			string_replace_value((char*)s_cmd_buffer, 32, 0);
 
-			arguments++;
+			s_arg_buffer[0] = (uint32_t)s_cmd_buffer;
 
-			terminal_build_arg_buffer(arguments);
+			for (uint32_t j = 0, k = 1; j < TERMINAL_CMD_BUFFER_SIZE; j++)
+			{
+				if ((s_cmd_buffer[j] == 0) && (j < (TERMINAL_CMD_BUFFER_SIZE - 1)) && (s_cmd_buffer[j + 1] != 0))
+				{
+					s_arg_buffer[k++] = (uint32_t)&s_cmd_buffer[j + 1];
+				}
+			}
 
-			g_commands[i].function(argument_count, (char**)s_arg_buffer);
+			g_commands[i].function(argc, (char**)s_arg_buffer);
 
 			break;
 		}
@@ -192,19 +195,6 @@ static void terminal_execute_buffer(void)
 
 	memset(s_cmd_buffer, 0, sizeof(s_cmd_buffer));
 	memset(s_arg_buffer, 0, sizeof(s_arg_buffer));
-}
-
-static void terminal_build_arg_buffer(uint8_t* commands)
-{
-	s_arg_buffer[0] = (uint32_t)&commands[0];
-
-	for (uint32_t i = 0, j = 1; i < TERMINAL_CMD_BUFFER_SIZE; i++)
-	{
-		if ((commands[i] == 0) && (i < (TERMINAL_CMD_BUFFER_SIZE - 2)) && (commands[i + 1] != 0))
-		{
-			s_arg_buffer[j++] = (uint32_t)&commands[i + 1];
-		}
-	}
 }
 
 void usart2_isr(void)

@@ -32,9 +32,11 @@ void string_replace_value(char* string, char value, char replacement)
     }
 }
 
-void memory_dump_range(uint8_t* source, uint32_t size, uint32_t block)
+void memory_dump_hex_range(uint8_t* source, uint32_t size, uint32_t block)
 {
-    for (uint32_t i = 0; i < size; i++)
+    uint32_t i = 0;
+
+    while (i < size)
     {
         if (source[i] >= 32 && source[i] < 127)
         {
@@ -49,5 +51,27 @@ void memory_dump_range(uint8_t* source, uint32_t size, uint32_t block)
         {
             printf("\r\n");
         }
+
+        i++;
+    }
+}
+
+void memory_dump_bin_range(uint8_t* source, uint32_t size)
+{
+    uint32_t i = 0;
+    uint8_t m = 0;
+
+    while (i < size)
+    {
+        m = 1 << (i % 8);
+
+        printf("%d", (source[i / 8] & m) == m);
+
+        if (m == 128 && i < (size - 1))
+        {
+            printf("'");
+        }
+
+        i++;
     }
 }
